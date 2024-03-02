@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    events: {
+      type: Boolean,
+      trim: true
+    },
     favoriteCharacters: [{ type: String, trim: true }],
     requestList: [{ type: mongoose.Schema.Types.ObjectId }],
     lastRequestDate: Date,

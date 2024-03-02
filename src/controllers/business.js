@@ -18,6 +18,7 @@ exports.registerBusiness = async (req, res, next) => {
     social,
     price,
     image,
+    events,
     description,
   } = req.body;
   const role = "business";
@@ -31,6 +32,7 @@ exports.registerBusiness = async (req, res, next) => {
       role,
       name,
       phone,
+      events,
       direction,
       capacity,
       genre,
