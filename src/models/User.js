@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     price: {
-      type: String,
+      type: Number,
       trim: true,
     },
     image: {
@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     capacity: {
-      type: String,
+      type: Number,
       trim: true,
     },
     description: {
