@@ -22,8 +22,13 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      trim: true,
-      required: [true, "Password is required"],
+      required: function() { return this.authenticationMethod === 'local'; }
+    },
+    authenticationMethod: {
+      type: String,
+      required: true,
+      enum: ['local', 'google'],
+      default: 'local'
     },
     name: {
       type: String,

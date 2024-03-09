@@ -40,14 +40,12 @@ exports.addToFavorites = async (req, res, next) => {
       const index = userDocument.favoriteCharacters.indexOf(id);
       userDocument.favoriteCharacters.splice(index, 1);
       await userDocument.save();
-      console.log("Character removed from favorites");
       return res
         .status(200)
         .json({ message: "Character removed from favorites" });
     } else {
       userDocument.favoriteCharacters.push(id);
       await userDocument.save();
-      console.log("Character added to favorites");
       return res.status(200).json({ message: "Character added to favorites" });
     }
   } catch (error) {

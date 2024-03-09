@@ -1,5 +1,7 @@
 const { hash, compare } = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const User = require("../models/User");
 
@@ -63,9 +65,9 @@ exports.register = async (req, res, next) => {
 };
 
 exports.login = async (req, res, next) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ username }).lean();
+    const user = await User.findOne({ email }).lean();
     if (!user) return res.status(404).send("Invalid credentials");
     if (user.role !== "user")
       return res.status(404).send("Invalid credentials..");
@@ -173,5 +175,92 @@ exports.checkApplication = async (req, res) => {
     res.status(200).json({ canApply, lastRequestDate: user.lastRequestDate });
   } catch (error) {
     res.status(500).send(error.message);
+  }
+};
+
+exports.googleRegister = async (req, res) => {
+  const { token, role } = req.body; // Recoger el rol desde el cuerpo de la solicitud
+  try {
+    // Verificar el token ID con Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    // Buscar si el usuario ya existe en la DB
+    let user = await User.findOne({ email: payload.email });
+
+    if (!user) {
+      // Si el usuario no existe, crear uno nuevo
+      user = await User.create({
+        email: payload.email,
+        username: payload.name,
+        role: role || "user",
+        authenticationMethod: "google", // Utilizar el rol proporcionado o establecer "user" como valor predeterminado
+        // La contraseña no se establece; la autenticación es por Google
+      });
+    }
+
+    // Generar JWT para el usuario
+    const jwtToken = sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Enviar token al cliente
+    res.status(200).json({
+      token: jwtToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Error verificando el token de Google", error);
+    res.status(500).send("Error de autenticación con Google");
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  const { token } = req.body; // Recoger el token desde el cuerpo de la solicitud
+  try {
+    // Verificar el token ID con Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    // Buscar si el usuario existe en la DB
+    const user = await User.findOne({ email: payload.email });
+
+    if (!user) {
+      // Si el usuario no existe, devolver un error de autenticación
+      return res.status(401).send("Usuario no encontrado");
+    }
+
+    // Generar JWT para el usuario
+    const jwtToken = sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Enviar token al cliente
+    res.status(200).json({
+      token: jwtToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error verificando el token de Google", error);
+    res.status(500).send("Error de autenticación con Google");
   }
 };

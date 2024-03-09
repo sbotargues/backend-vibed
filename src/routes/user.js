@@ -39,6 +39,8 @@ router.put(
 router.get("/all-users", isBusiness, userController.getUsers);
 router.post('/send-requests', isAuth, userController.sendRequests);
 router.get('/check-application/:userId', isAuth, userController.checkApplication);
+router.post('/google-login', userController.googleLogin);
+router.post("/google-register", userController.googleRegister);
 
 
 module.exports = router;

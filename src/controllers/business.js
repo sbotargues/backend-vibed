@@ -57,9 +57,9 @@ exports.registerBusiness = async (req, res, next) => {
 };
 
 exports.loginBusiness = async (req, res, next) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ username, role: "business" }).lean();
+    const user = await User.findOne({ email, role: "business" }).lean();
     if (!user) return res.status(404).send("Invalid credentials");
     const isMatch = await compare(password, user.password);
     if (!isMatch) return res.status(400).send("Invalid credentials");
