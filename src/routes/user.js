@@ -41,6 +41,8 @@ router.post('/send-requests', isAuth, userController.sendRequests);
 router.get('/check-application/:userId', isAuth, userController.checkApplication);
 router.post('/google-login', userController.googleLogin);
 router.post("/google-register", userController.googleRegister);
+router.post('/forgot-password', userController.forgotPassword);
+router.post('/reset-password/:token', userController.resetPassword);
 
 
 module.exports = router;

@@ -2,6 +2,8 @@ const { hash, compare } = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const User = require("../models/User");
 
@@ -263,4 +265,65 @@ exports.googleLogin = async (req, res) => {
     console.error("Error verificando el token de Google", error);
     res.status(500).send("Error de autenticación con Google");
   }
+};
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).send('User not found');
+  }
+
+  const resetToken = crypto.randomBytes(20).toString('hex');
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = Date.now() + 3600000;
+  await user.save();
+
+  const resetURL = `https://vibed.es/reset-password/${resetToken}`;
+  const message = `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process:\n\n${resetURL}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
+
+  try {
+    await nodemailer.createTransport({
+      host: "smtp-mail.outlook.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    }).sendMail({
+      from: process.env.EMAIL_USERNAME,
+      to: email,
+      subject: 'Password Reset Link',
+      text: message,
+    });
+
+    res.status(200).send('Email sent.');
+  } catch (err) {
+    console.log(err);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    return res.status(500).send('Email could not be sent.');
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).send('Password reset token is invalid or has expired.');
+  }
+
+  user.password = await bcrypt.hash(password, 12);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  res.status(200).send('Your password has been changed.');
 };
