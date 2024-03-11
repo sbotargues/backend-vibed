@@ -71,6 +71,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       trim: true
     },
+    resetPasswordToken: {
+      type: String,
+      required: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      required: false,
+    },
     favoriteCharacters: [{ type: String, trim: true }],
     requestList: [{ type: mongoose.Schema.Types.ObjectId }],
     lastRequestDate: Date,

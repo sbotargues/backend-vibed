@@ -26,8 +26,6 @@ exports.register = async (req, res, next) => {
     description,
   } = req.body;
 
-  console.log(req);
-
   if (!username || !email || !password || !role) {
     return res.status(400).send("Please fill in all the required fields!");
   }
@@ -125,36 +123,20 @@ exports.getUsers = async (req, res, next) => {
 
 exports.sendRequests = async (req, res) => {
   const { userId, businessIds } = req.body;
-  console.log(
-    "Received sendRequests with userId:",
-    userId,
-    "and businessIds:",
-    businessIds
-  );
-
   try {
     const user = await User.findById(userId);
-    console.log("User found:", !!user);
     if (!user) return res.status(404).send("User not found");
 
     if (
       user.lastRequestDate &&
       new Date() - new Date(user.lastRequestDate) < 7 * 24 * 60 * 60 * 1000
     ) {
-      console.log(
-        "User cannot submit requests yet, lastRequestDate:",
-        user.lastRequestDate
-      );
       return res.status(400).send("You can only submit requests once a week");
     }
 
     user.requestList = businessIds;
     user.lastRequestDate = new Date();
-    console.log("Updating user with new requestList and lastRequestDate");
-
     await user.save();
-    console.log("User updated successfully");
-
     res.status(200).send("Requests sent successfully");
   } catch (error) {
     console.error("Error processing sendRequests:", error);
@@ -273,7 +255,6 @@ exports.forgotPassword = async (req, res) => {
   if (!user) {
     return res.status(404).send("User not found");
   }
-
   const resetToken = crypto.randomBytes(20).toString("hex");
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = Date.now() + 3600000;
@@ -306,7 +287,6 @@ exports.forgotPassword = async (req, res) => {
 
     res.status(200).send("Email sent.");
   } catch (err) {
-    console.log(err);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -321,13 +301,11 @@ exports.resetPassword = async (req, res) => {
     resetPasswordToken: token,
     resetPasswordExpires: { $gt: Date.now() },
   });
-
   if (!user) {
     return res
       .status(400)
       .send("Password reset token is invalid or has expired.");
   }
-
   user.password = await hash(password, 12);
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
