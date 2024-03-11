@@ -278,9 +278,9 @@ exports.forgotPassword = async (req, res) => {
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = Date.now() + 3600000;
   await user.save();
-  // const resetURL = `https://vibed.es/reset-password/${resetToken}`;
+  const resetURL = `https://vibed.es/reset-password/${resetToken}`;
   //uncomment to test in localhost:3000
-  const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
+  //const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
   const message = `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process:\n\n${resetURL}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
 
   try {
