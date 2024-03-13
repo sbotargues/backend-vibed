@@ -1,8 +1,9 @@
 const { hash, compare } = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 const mongoose = require("mongoose");
-
+const nodemailer = require("nodemailer");
 const User = require("../models/User");
+const { sendWelcomeEmailBusiness } = require("../utils/emailUtils");
 
 exports.registerBusiness = async (req, res, next) => {
   const {
@@ -48,6 +49,7 @@ exports.registerBusiness = async (req, res, next) => {
     const token = sign({ business: user }, process.env.JWT_SECRET, {
       expiresIn: 360000,
     });
+    await sendWelcomeEmailBusiness(user.email, user.username);
     return res
       .status(201)
       .json({ token, business: { ...user._doc, password: null } });

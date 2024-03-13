@@ -3,7 +3,7 @@ const { sign } = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+const { sendWelcomeEmail, sendWelcomeEmailBusiness } = require('../utils/emailUtils');
 
 const User = require("../models/User");
 
@@ -54,7 +54,7 @@ exports.register = async (req, res, next) => {
     const token = sign({ [role]: user }, process.env.JWT_SECRET, {
       expiresIn: 360000,
     });
-
+    await sendWelcomeEmail(user.email, user.username);
     return res.status(201).json({
       token,
       user: { ...user._doc, password: null },
@@ -150,8 +150,6 @@ exports.checkApplication = async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(404).send("User not found");
-
-    // Comprueba si ha pasado una semana desde el último envío
     const canApply =
       !user.lastRequestDate ||
       new Date() - new Date(user.lastRequestDate) >= 7 * 24 * 60 * 60 * 1000;
@@ -163,37 +161,33 @@ exports.checkApplication = async (req, res) => {
 };
 
 exports.googleRegister = async (req, res) => {
-  const { token, role } = req.body; // Recoger el rol desde el cuerpo de la solicitud
+  const { token, role } = req.body;
   try {
-    // Verificar el token ID con Google
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-
-    // Buscar si el usuario ya existe en la DB
     let user = await User.findOne({ email: payload.email });
 
     if (!user) {
-      // Si el usuario no existe, crear uno nuevo
       user = await User.create({
         email: payload.email,
         username: payload.name,
         role: role || "user",
-        authenticationMethod: "google", // Utilizar el rol proporcionado o establecer "user" como valor predeterminado
-        // La contraseña no se establece; la autenticación es por Google
+        authenticationMethod: "google",
       });
+      if (user.role === "business") {
+        await sendWelcomeEmailBusiness(user.email, user.username);
+      } else {
+        await sendWelcomeEmail(user.email, user.username);
+      }
     }
-
-    // Generar JWT para el usuario
     const jwtToken = sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
-
-    // Enviar token al cliente
     res.status(200).json({
       token: jwtToken,
       user: {
@@ -210,31 +204,23 @@ exports.googleRegister = async (req, res) => {
 };
 
 exports.googleLogin = async (req, res) => {
-  const { token } = req.body; // Recoger el token desde el cuerpo de la solicitud
+  const { token } = req.body;
   try {
-    // Verificar el token ID con Google
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-
-    // Buscar si el usuario existe en la DB
     const user = await User.findOne({ email: payload.email });
 
     if (!user) {
-      // Si el usuario no existe, devolver un error de autenticación
       return res.status(401).send("Usuario no encontrado");
     }
-
-    // Generar JWT para el usuario
     const jwtToken = sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
-
-    // Enviar token al cliente
     res.status(200).json({
       token: jwtToken,
       user: {
@@ -261,7 +247,7 @@ exports.forgotPassword = async (req, res) => {
   await user.save();
   const resetURL = `https://vibed.es/reset-password/${resetToken}`;
   //uncomment to test in localhost:3000
-  //const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
+  // const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
   const message = `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process:\n\n${resetURL}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
 
   try {
