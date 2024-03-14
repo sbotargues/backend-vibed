@@ -33,6 +33,8 @@ router.get(
 router.post("/login", businessController.loginBusiness);
 router.post("/register", businessController.registerBusiness);
 router.get("/auth-business", isAuth, businessController.getAuthBusiness);
+router.post('/dislike-user/:userId', isAuth, businessController.dislikeUser);
+router.post("/like-user/:userId", isAuth, businessController.likeUser);
 router.put(
   "/:businessId",
   isAuth,

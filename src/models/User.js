@@ -22,13 +22,15 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: function() { return this.authenticationMethod === 'local'; }
+      required: function () {
+        return this.authenticationMethod === "local";
+      },
     },
     authenticationMethod: {
       type: String,
       required: true,
-      enum: ['local', 'google'],
-      default: 'local'
+      enum: ["local", "google"],
+      default: "local",
     },
     name: {
       type: String,
@@ -69,7 +71,7 @@ const userSchema = new mongoose.Schema(
     },
     events: {
       type: Boolean,
-      trim: true
+      trim: true,
     },
     resetPasswordToken: {
       type: String,
@@ -79,6 +81,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+    likesFromBusinesses: [{ type: mongoose.Schema.Types.ObjectId }],
     favoriteCharacters: [{ type: String, trim: true }],
     requestList: [{ type: mongoose.Schema.Types.ObjectId }],
     lastRequestDate: Date,

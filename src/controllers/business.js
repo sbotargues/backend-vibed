@@ -147,3 +147,30 @@ exports.getUsersAppliedToBusiness = async (req, res, next) => {
     return res.status(500).send(error.message);
   }
 };
+
+exports.likeUser = async (req, res, next) => {
+  const userId = req.params.userId;
+  const businessId = req.business._id;
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { likesFromBusinesses: businessId },
+    });
+    res.status(200).send("Like successful");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+};
+
+exports.dislikeUser = async (req, res, next) => {
+  const userId = req.params.userId;
+  const businessId = req.business._id;
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $pull: { likesFromBusinesses: businessId },
+    });
+    res.status(200).send("Dislike successful");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+};
