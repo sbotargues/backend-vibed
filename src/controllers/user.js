@@ -3,7 +3,10 @@ const { sign } = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const crypto = require("crypto");
-const { sendWelcomeEmail, sendWelcomeEmailBusiness } = require('../utils/emailUtils');
+const {
+  sendWelcomeEmail,
+  sendWelcomeEmailBusiness,
+} = require("../utils/emailUtils");
 
 const User = require("../models/User");
 
@@ -23,6 +26,8 @@ exports.register = async (req, res, next) => {
     image,
     direction,
     capacity,
+    gender,
+    birthday,
     description,
   } = req.body;
 
@@ -46,6 +51,8 @@ exports.register = async (req, res, next) => {
       image,
       direction,
       capacity,
+      gender,
+      birthday: birthday ? new Date(birthday) : null,
       description,
     };
 
@@ -95,10 +102,13 @@ exports.updateUser = async (req, res, next) => {
   const { userId } = req.params;
   const updateFields = req.body;
 
+  if (updateFields.birthday) {
+    updateFields.birthday = new Date(updateFields.birthday);
+  }
+
   if (req.file) {
     updateFields.image = req.file.location;
   }
-
   try {
     const userToUpdate = await User.findByIdAndUpdate(userId, updateFields, {
       new: true,

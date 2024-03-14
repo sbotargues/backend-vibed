@@ -77,6 +77,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    birthday: {
+      type: Date,
+      required: false,
+    },
+    gender: {
+      type: String,
+      trim: true,
+    },
     resetPasswordExpires: {
       type: Date,
       required: false,
